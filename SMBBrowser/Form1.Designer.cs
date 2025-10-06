@@ -152,6 +152,7 @@
             Controls.Add(label1);
             Name = "Form1";
             Text = "SMB Browser";
+            FormClosing += Form1_FormClosing;
             ResumeLayout(false);
             PerformLayout();
         }

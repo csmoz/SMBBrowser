@@ -17,8 +17,6 @@ namespace SMBBrowser
         {
             treeView1.Nodes.Clear();
 
-            NTStatus status;
-
             m_client = new SMB2Client();
 
             IPAddress ip;
@@ -62,7 +60,7 @@ namespace SMBBrowser
             if (listStatus != NTStatus.STATUS_SUCCESS)
             {
                 Log("Failed to list shares.", Color.Red);
-                Log($"NTStatus code: {loginStatus.ToString()}", Color.OrangeRed);
+                Log($"NTStatus code: {listStatus.ToString()}", Color.OrangeRed);
                 return;
             }
             Log("Status: OK", Color.Green);
@@ -166,10 +164,11 @@ namespace SMBBrowser
 
         private void PopulateNode(ISMBFileStore store, TreeNode node, string path)
         {
+            object dirHandle = null;
+
             try
             {
                 NTStatus status;
-                object dirHandle;
                 FileStatus fileStatus;
 
                 status = store.CreateFile(
@@ -191,7 +190,6 @@ namespace SMBBrowser
 
                 List<QueryDirectoryFileInformation> fileList;
                 status = store.QueryDirectory(out fileList, dirHandle, "*", FileInformationClass.FileDirectoryInformation);
-                status = store.CloseFile(dirHandle);
 
                 foreach (var f in fileList)
                 {
@@ -234,12 +232,25 @@ namespace SMBBrowser
 
                     node.Nodes.Add(child);
                 }
-
-                store.CloseFile(dirHandle);
             }
             catch (Exception ex)
             {
                 Log(ex.Message, Color.Red);
+            }
+            finally
+            {
+                if (dirHandle != null)
+                {
+                    store.CloseFile(dirHandle);
+                }
+            }
+        }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (m_client != null)
+            {
+                m_client.Disconnect();
             }
         }
     }
