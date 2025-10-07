@@ -1,6 +1,7 @@
 using SMBLibrary;
 using SMBLibrary.Client;
 using System.Net;
+using System.Net.Sockets;
 using System.Reflection;
 
 namespace SMBBrowser
@@ -29,6 +30,16 @@ namespace SMBBrowser
             if (!int.TryParse(textBoxPort.Text, out port) || port > 65535)
             {
                 Log("Enter a valid Port number.", Color.Red);
+                return;
+            }
+
+            if (IsPortOpen(ip.ToString(), port, TimeSpan.FromSeconds(5)))
+            {
+                Log("Port is open", Color.Green);
+            }
+            else
+            {
+                Log("Port is closed", Color.Red);
                 return;
             }
 
@@ -77,6 +88,24 @@ namespace SMBBrowser
                     treeView1.Nodes.Add(root);
                     fileStore.Disconnect();
                 }
+            }
+        }
+
+        bool IsPortOpen(string host, int port, TimeSpan timeout)
+        {
+            try
+            {
+                using (var client = new TcpClient())
+                {
+                    var result = client.BeginConnect(host, port, null, null);
+                    var success = result.AsyncWaitHandle.WaitOne(timeout);
+                    client.EndConnect(result);
+                    return success;
+                }
+            }
+            catch
+            {
+                return false;
             }
         }
 
